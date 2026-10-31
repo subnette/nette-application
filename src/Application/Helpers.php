@@ -36,6 +36,11 @@ final class Helpers
 	 */
 	public static function getClassesAndTraits(string $class): array
 	{
+		static $cache = [];
+		if (isset($cache[$class])) {
+			return $cache[$class];
+		}
+
 		$res = [$class => $class] + class_parents($class);
 		$addTraits = function (string $type) use (&$res, &$addTraits): void {
 			$traits = class_uses($type) ?: [];
@@ -48,6 +53,6 @@ final class Helpers
 			$addTraits($type);
 		}
 
-		return $res;
+		return $cache[$class] = $res;
 	}
 }

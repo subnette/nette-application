@@ -25,11 +25,27 @@ final class ComponentReflection extends \ReflectionClass
 	/** @var array<string, array<string, array{def: mixed, type: string, since?: ?class-string}>> */
 	private static array $ppCache = [];
 
+	/** @var array<string, self> */
+	private static array $instances = [];
+
+	/** @var array<string, array<string, array{def: mixed, type: string, since?: ?class-string}>> */
+	private static array $persistentCache = [];
+
 	/** @var array<string, array<string, array{since: class-string}>> */
 	private static array $pcCache = [];
 
 	/** @var array<string, array<string, ?\ReflectionMethod>> */
 	private static array $armCache = [];
+
+
+	/**
+	 * Returns a shared instance for the class.
+	 * @param  class-string  $class
+	 */
+	public static function for(string $class): self
+	{
+		return self::$instances[$class] ??= new self($class);
+	}
 
 
 	/**
@@ -63,7 +79,7 @@ final class ComponentReflection extends \ReflectionClass
 		}
 
 		if ($this->getParentClass()->isSubclassOf(Component::class)) {
-			$parent = new self($this->getParentClass()->getName());
+			$parent = self::for($this->getParentClass()->getName());
 			foreach ($parent->getParameters() as $name => $meta) {
 				if (!isset($params[$name])) {
 					$params[$name] = $meta;
@@ -83,7 +99,7 @@ final class ComponentReflection extends \ReflectionClass
 	 */
 	public function getPersistentParams(): array
 	{
-		return array_filter($this->getParameters(), fn($param) => array_key_exists('since', $param));
+		return self::$persistentCache[$this->name] ??= array_filter($this->getParameters(), fn($param) => array_key_exists('since', $param));
 	}
 
 
@@ -106,7 +122,7 @@ final class ComponentReflection extends \ReflectionClass
 		$components = array_fill_keys($names, ['since' => $class]);
 
 		if ($this->isSubclassOf(Presenter::class)) {
-			$parent = new self($this->getParentClass()->getName());
+			$parent = self::for($this->getParentClass()->getName());
 			$components = $parent->getPersistentComponents() + $components;
 		}
 

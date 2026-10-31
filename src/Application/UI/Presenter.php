@@ -99,6 +99,9 @@ abstract class Presenter extends Control implements Application\IPresenter
 	/** @var array<string, array<string, mixed>> */
 	private array $globalParams = [];
 
+	/** @var array<class-string, bool> */
+	private static array $statelessCache = [];
+
 	/** @var array<string, mixed> */
 	private array $globalState;
 
@@ -983,7 +986,7 @@ abstract class Presenter extends Control implements Application\IPresenter
 				}
 			}
 
-			$this->saveStatePartial($state, new ComponentReflection($forClass ?? $this));
+			$this->saveStatePartial($state, ComponentReflection::for($forClass ?? $this::class));
 
 			if ($sinces === null) {
 				$sinces = [];
@@ -1002,6 +1005,8 @@ abstract class Presenter extends Control implements Application\IPresenter
 				}
 
 				if (!$component instanceof StatePersistent || !$component instanceof Component) {
+					continue;
+				} elseif (self::$statelessCache[$component::class] ??= self::isStateless($component)) {
 					continue;
 				}
 
@@ -1039,6 +1044,17 @@ abstract class Presenter extends Control implements Application\IPresenter
 		}
 
 		return $state;
+	}
+
+
+	/**
+	 * Tells whether saveState() of the component can never produce any value.
+	 */
+	private static function isStateless(Component $component): bool
+	{
+		return !$component::getReflection()->getPersistentParams()
+			&& (new \ReflectionMethod($component, 'saveState'))->class === Component::class
+			&& (new \ReflectionMethod($component, 'saveStatePartial'))->class === Component::class;
 	}
 
 

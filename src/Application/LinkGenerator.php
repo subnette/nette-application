@@ -140,7 +140,7 @@ final class LinkGenerator
 		// PROCESS SIGNAL ARGUMENTS
 		if (isset($signal)) { // $component must be StatePersistent
 			assert($component !== null);
-			$reflection = new UI\ComponentReflection($component::class);
+			$reflection = UI\ComponentReflection::for($component::class);
 			if ($signal === 'this') { // means "no signal"
 				$signal = '';
 				if (array_key_exists(0, $args)) {
@@ -189,7 +189,7 @@ final class LinkGenerator
 				&& ($action === '*' || strcasecmp($action, $refPresenter->getAction()) === 0)
 				&& $presenterClass === $refPresenter::class;
 
-			$reflection = new UI\ComponentReflection($presenterClass);
+			$reflection = UI\ComponentReflection::for($presenterClass);
 			$this->validateLinkTarget($refPresenter, $reflection, "presenter '$presenter'", $mode);
 
 			foreach (array_intersect_key($reflection->getParameters(), $args) as $name => $param) {

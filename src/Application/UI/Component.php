@@ -150,7 +150,7 @@ abstract class Component extends Nette\ComponentModel\Container implements Signa
 	 */
 	public static function getReflection(): ComponentReflection
 	{
-		return new ComponentReflection(static::class);
+		return ComponentReflection::for(static::class);
 	}
 
 

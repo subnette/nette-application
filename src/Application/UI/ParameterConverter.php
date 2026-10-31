@@ -20,6 +20,23 @@ final class ParameterConverter
 {
 	use Nette\StaticClass;
 
+	/** @var array<string, list<array{\ReflectionParameter, string, string}>> */
+	private static array $paramsCache = [];
+
+	/**
+	 * @return list<array{\ReflectionParameter, string, string}>  parameter, name, type
+	 */
+	private static function describeParameters(\ReflectionMethod $method): array
+	{
+		$res = [];
+		foreach ($method->getParameters() as $param) {
+			$res[] = [$param, $param->getName(), self::getType($param)];
+		}
+
+		return $res;
+	}
+
+
 	/**
 	 * @param  array<string, mixed>  $args
 	 * @return list<mixed>
@@ -78,9 +95,7 @@ final class ParameterConverter
 	): void
 	{
 		$i = 0;
-		foreach ($method->getParameters() as $param) {
-			$type = self::getType($param);
-			$name = $param->getName();
+		foreach (self::$paramsCache[$method->class . '::' . $method->name] ??= self::describeParameters($method) as [$param, $name, $type]) {
 			$fromSupplemental = false;
 
 			if (array_key_exists($i, $args)) {
@@ -141,6 +156,17 @@ final class ParameterConverter
 	 */
 	public static function convertType(mixed &$val, string $types): bool
 	{
+		// fast path: the value already has exactly the declared type, conversion would not change it
+		if (match ($types) {
+			'string', '?string' => is_string($val),
+			'int', '?int' => is_int($val),
+			'bool', '?bool' => is_bool($val),
+			'array', '?array' => is_array($val),
+			default => false,
+		}) {
+			return true;
+		}
+
 		$scalars = ['string' => 1, 'int' => 1, 'float' => 1, 'bool' => 1, 'true' => 1, 'false' => 1];
 		$testable = ['iterable' => 1, 'object' => 1, 'array' => 1, 'null' => 1];
 

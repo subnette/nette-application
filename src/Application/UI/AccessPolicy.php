@@ -20,6 +20,9 @@ final class AccessPolicy
 {
 	/** @var array<class-string, Attributes\Requires[]> */
 	private static array $classAttrsCache = [];
+
+	/** @var array<string, bool> */
+	private static array $linkableCache = [];
 	private Presenter $presenter;
 
 
@@ -47,6 +50,15 @@ final class AccessPolicy
 
 
 	public function isLinkable(): bool
+	{
+		$key = $this->element instanceof \ReflectionMethod
+			? $this->element->class . '::' . $this->element->name
+			: $this->element->name;
+		return self::$linkableCache[$key] ??= $this->computeLinkable();
+	}
+
+
+	private function computeLinkable(): bool
 	{
 		$attrs = $this->getAttributes();
 		return !$attrs || !Nette\Utils\Arrays::some($attrs, fn($attr) => $attr->forward === true);
